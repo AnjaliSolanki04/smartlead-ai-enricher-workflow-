@@ -3,7 +3,6 @@
 
 **Production-ready AI lead qualification workflow** - Transforms raw form submissions into enriched, actionable leads with personalized sales emails in seconds.
 
-[![Import to n8n](https://img.shields.io/badge/Import-n8n-00CC99?style=for-the-badge&logo=n8n)](https://n8n.io/workflows)
 
 ## ✨ **Live Workflow Demo**
 ```
