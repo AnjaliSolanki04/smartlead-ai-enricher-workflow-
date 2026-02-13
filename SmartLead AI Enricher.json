@@ -1,0 +1,292 @@
+{
+  "name": "SmartLead AI Enricher",
+  "nodes": [
+    {
+      "parameters": {
+        "url": "https://api.genderize.io/",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "name",
+              "value": "={{ $json['Name '] }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [1792, 432],
+      "id": "602882c1-d3be-40bc-95d7-514df4fb8a91",
+      "name": "Gender API"
+    },
+    {
+      "parameters": {
+        "url": "https://api.nationalize.io/?",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "name",
+              "value": "={{ $json.name }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [2000, 432],
+      "id": "3ddc7bf0-9608-4531-a1cf-523842fd1d9b",
+      "name": "Nationality API"
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "[YOUR_GOOGLE_SHEET_ID]",
+          "mode": "list",
+          "cachedResultName": "Potential_Customer"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Name ": "={{ $('Save to Sheet').item.json[\"Name \"] }}",
+            "id": "={{ $('Save to Sheet').item.json.id }}",
+            "Number": "={{ $('Save to Sheet').item.json.Number }}",
+            "Budget ": "={{ $('Save to Sheet').item.json[\"Budget \"] }}",
+            "Gender ": "={{ $('Gender API').item.json.gender }}",
+            "Nationality": "={{ $json.country[0].country_id }}"
+          },
+          "matchingColumns": ["id"]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [2208, 432],
+      "id": "2e658b7c-b0e0-4a48-ab5b-4c9a034cf7ef",
+      "name": "Update Enriched Data"
+    },
+    {
+      "parameters": {
+        "content": "📊 Token limit: Free APIs have daily quotas",
+        "height": 112,
+        "width": 336
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [1616, 256],
+      "id": "3055e891-58fa-451c-825c-18fc9dac03a9",
+      "name": "⚠️ API Limits"
+    },
+    {
+      "parameters": {
+        "formTitle": "New Lead Form",
+        "formDescription": "Submit customer details for AI enrichment",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "ID",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Name",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Phone",
+              "fieldType": "number"
+            },
+            {
+              "fieldLabel": "Budget"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.3,
+      "position": [1392, 432],
+      "id": "4f2c95d3-9735-499a-b100-a27209714d19",
+      "name": "Lead Form",
+      "webhookId": "11a18f1c-b7eb-4e0e-a8cc-ebe3b0de4fd3"
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "[YOUR_GOOGLE_SHEET_ID]",
+          "mode": "list",
+          "cachedResultName": "Potential_Customer"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ $json.ID }}",
+            "Name ": "={{ $json.Name }}",
+            "Number": "={{ $json.Phone }}",
+            "Budget ": "={{ $json.Budget }}"
+          },
+          "matchingColumns": ["id"]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [1600, 464],
+      "id": "f31faa76-a3f1-4a9a-8fd0-59aa1b90b28b",
+      "name": "Save to Sheet"
+    },
+    {
+      "parameters": {
+        "sendTo": "[YOUR_EMAIL@domain.com]",
+        "subject": "={{ $('AI Email Generator').item.json.output.subject }}",
+        "message": "={{ $('AI Email Generator').item.json.output.body }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [2880, 432],
+      "id": "19472f86-e246-4f2c-b559-c2b812c9f426",
+      "name": "Send Sales Email",
+      "webhookId": "8b85f4cb-dc0c-4995-8685-e2d7e51633c7"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=**Generate Personalized Sales Email**\n\n**Lead Data:**\nName: {{ $json['Name '] }} | Phone: {{ $json.Number }} | Budget: {{ $json['Budget '] }}\nGender: {{ $json['Gender '] }} | Nationality: {{ $json.Nationality }}\n\n**Instructions:**\n1. Create detailed HTML sales email\n2. Tailor to budget/nationality/gender\n3. Sign-off: \"Thanks, Your AI Team\"\n4. Return **JSON only**: {\"subject\": \"...\", \"body\": \"<html>...</html>\"}\n\n**Output JSON schema:** {\"subject\": \"string\", \"body\": \"string\"}",
+        "hasOutputParser": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [2416, 432],
+      "id": "c33c97a1-8f06-4066-8958-b15701bd335f",
+      "name": "AI Email Generator"
+    },
+    {
+      "parameters": {
+        "model": "llama-3.3-70b-versatile",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [2416, 656],
+      "id": "a7109898-ce61-4cbb-937a-136f48ff6e8c",
+      "name": "Groq Llama 3.3"
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\"type\":\"object\",\"properties\":{\"subject\":{\"type\":\"string\"},\"body\":{\"type\":\"string\"}},\"required\":[\"subject\",\"body\"]}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [2592, 640],
+      "id": "6b2faddf-b2c4-4367-892a-6ece32fb5b65",
+      "name": "JSON Parser"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Lead Form": {
+      "main": [[
+        {
+          "node": "Save to Sheet",
+          "type": "main",
+          "index": 0
+        }
+      ]]
+    },
+    "Save to Sheet": {
+      "main": [[
+        {
+          "node": "Gender API",
+          "type": "main",
+          "index": 0
+        }
+      ]]
+    },
+    "Gender API": {
+      "main": [[
+        {
+          "node": "Nationality API",
+          "type": "main",
+          "index": 0
+        }
+      ]]
+    },
+    "Nationality API": {
+      "main": [[
+        {
+          "node": "Update Enriched Data",
+          "type": "main",
+          "index": 0
+        }
+      ]]
+    },
+    "Update Enriched Data": {
+      "main": [[
+        {
+          "node": "AI Email Generator",
+          "type": "main",
+          "index": 0
+        }
+      ]]
+    },
+    "Groq Llama 3.3": {
+      "ai_languageModel": [[
+        {
+          "node": "AI Email Generator",
+          "type": "ai_languageModel",
+          "index": 0
+        }
+      ]]
+    },
+    "AI Email Generator": {
+      "main": [[
+        {
+          "node": "Send Sales Email",
+          "type": "main",
+          "index": 0
+        }
+      ]]
+    },
+    "JSON Parser": {
+      "ai_outputParser": [[
+        {
+          "node": "AI Email Generator",
+          "type": "ai_outputParser",
+          "index": 0
+        }
+      ]]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "10177451-6f0f-4876-8b3d-686d4b03e848",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "[REDACTED]"
+  },
+  "id": "qBC8vzP8dkVyJn-Ii6kQr",
+  "tags": []
+}
