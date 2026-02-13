@@ -3,8 +3,6 @@
 
 **Production-ready AI lead qualification workflow** - Transforms raw form submissions into enriched, actionable leads with personalized sales emails in seconds.
 
-
-## ✨ **Live Workflow Demo**
 ```
 📝 Fill form → 🤖 AI enriches data → 📊 Updates Sheets → ✉️ Sends sales email
 ```
